@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Welcome to the Home Page</h1>
+    {%if 'user_id' in session %}
+    <h2>Hello, {{user.username}}!</h2>
+    {%elif 'admin_id' in session %}
+    <h2>Welcome, Admin!</h2>
+    {%endif%} 
+
+</body>
+</html>
