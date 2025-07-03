@@ -2,7 +2,7 @@ from flask import current_app as app
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from applications.models import *
 from datetime import datetime
-
+from sqlalchemy import func
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -21,7 +21,7 @@ def login():
         elif admin and admin.password == password:
             session['admin_id'] = admin.id
             flash('Admin login successful!', 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('admin_dashboard'))
         
         else:
             flash('Invalid username or password.', 'error')
@@ -32,9 +32,6 @@ def home():
     if 'user_id' in session:
         user = User.query.get(session['user_id'])
         return render_template('home.html', user=user)
-    elif 'admin_id' in session:
-        admin = Admin.query.get(session['admin_id'])
-        return render_template('home.html', admin=admin)
     else:
         flash('You need to log in first.', 'error')
         return redirect(url_for('login'))
@@ -78,5 +75,239 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    return render_template('admin/admin_dashboard.html')
 
+@app.route('/admin/users')
+def manage_users():
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    users = User.query.all()
+    return render_template('admin/users.html', users=users)
+
+@app.route('/admin/search', methods=['GET', 'POST'])
+def admin_search():
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    
+    search_result = None
+    search_type = None
+
+    if request.method == 'POST':
+        search_by = request.form.get('search_by')
+        search_value = request.form.get('search_value')
+
+        if search_by == 'user_id':
+            search_type = 'user'
+            if search_value.isdigit():
+                search_result = User.query.filter_by(id=int(search_value)).first()
+        elif search_by == 'location':
+            search_type = 'lot'
+            search_result = Parking_lot.query.filter(Parking_lot.location.ilike(f"%{search_value}%")).all()
+
+    return render_template('admin/search.html', search_type=search_type, result=search_result)
+
+@app.route('/admin/lots')
+def manage_lots():
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+
+    lots = Parking_lot.query.all()
+    return render_template('admin/manage_lots.html', lots=lots)
+
+
+@app.route('/admin/lots/new', methods=['GET', 'POST'])
+def add_lot():
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        location = request.form['location']
+        address = request.form['address']
+        pincode = request.form['pincode']
+        price = request.form['price']
+        max_no_spots = int(request.form['max_no_spots'])
+        landmark = request.form['landmark']
+
+        new_lot = Parking_lot(
+            location=location,
+            address=address,
+            pincode=pincode,
+            price=price,
+            max_no_spots=max_no_spots,
+            landmark=landmark
+        )
+        db.session.add(new_lot)
+        db.session.commit()
+
+        # Auto-create spots
+        for _ in range(max_no_spots):
+            spot = Parking_spot(parking_lot_id=new_lot.id)
+            db.session.add(spot)
+        db.session.commit()
+
+        return redirect(url_for('manage_lots'))
+
+    return render_template('admin/add_lot.html')
+
+@app.route('/admin/lots/edit/<int:lot_id>', methods=['GET', 'POST'])
+def edit_lot(lot_id):
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+
+    lot = Parking_lot.query.get_or_404(lot_id)
+
+    if request.method == 'POST':
+        lot.location = request.form['location']
+        lot.address = request.form['address']
+        lot.pincode = request.form['pincode']
+        lot.price = request.form['price']
+        lot.landmark = request.form['landmark']
+        db.session.commit()
+        return redirect(url_for('manage_lots'))
+
+    return render_template('admin/edit_lot.html', lot=lot)
+
+@app.route('/admin/lots/view/<int:lot_id>')
+def view_lot(lot_id):
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+
+    lot = Parking_lot.query.get_or_404(lot_id)
+    spots = Parking_spot.query.filter_by(parking_lot_id=lot_id).all()
+    return render_template('admin/view_lot.html', lot=lot, spots=spots)
+
+@app.route('/admin/lots/delete/<int:lot_id>')
+def delete_lot(lot_id):
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+
+    lot = Parking_lot.query.get_or_404(lot_id)
+
+    # Check if any spot in this lot is occupied
+    occupied_spot = any(spot.is_booked for spot in lot.parking_spots)
+    if occupied_spot:
+        flash("Cannot delete the parking lot. Some spots are still occupied.", "danger")
+        return redirect(url_for('manage_lots'))
+
+    # Safe to delete
+    db.session.delete(lot)
+    db.session.commit()
+    flash("Parking lot deleted successfully.", "success")
+    return redirect(url_for('manage_lots'))
+
+
+@app.route('/admin/spot/<int:spot_id>')
+def view_spot(spot_id):
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    
+    spot = Parking_spot.query.get_or_404(spot_id)
+    return render_template('admin/view_spot.html', spot=spot)
+
+# # Route to delete a parking spot (if available)
+# @app.route('/admin/spot/delete/<int:spot_id>', methods=['POST'])
+# def delete_spot(spot_id):
+#     if 'admin_id' not in session:
+#         flash('You need to log in as an admin first.', 'error')
+#         return redirect(url_for('login'))
+#     spot = Parking_spot.query.get_or_404(spot_id)
+#     if spot.is_booked:
+#         flash("Cannot delete an occupied spot.", "danger")
+#     else:
+#         db.session.delete(spot)
+#         db.session.commit()
+#         flash("Spot deleted successfully.", "success")
+#     return redirect(url_for('view_lot', lot_id=spot.parking_lot_id))
+
+@app.route('/admin/spot/unavailable/<int:spot_id>', methods=['POST'])
+def mark_spot_unavailable(spot_id):
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    
+    spot = Parking_spot.query.get_or_404(spot_id)
+    if not spot.is_booked:
+        spot.additional_info = 'Unavailable'
+        db.session.commit()
+        flash("Spot marked as unavailable.", "success")
+    else:
+        flash("Cannot mark an occupied spot as unavailable.", "danger")
+    
+    return redirect(url_for('view_spot', spot_id=spot.id))
+
+
+# Route to view booking for a given spot
+@app.route('/admin/spot/<int:spot_id>/booking')
+def spot_booking(spot_id):
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    spot = Parking_spot.query.get_or_404(spot_id)
+    booking = Booking.query.filter_by(parking_spot_id=spot.id).order_by(Booking.start_time.desc()).first()
+    if not booking:
+        flash("No booking found for this spot.", "warning")
+        return redirect(url_for('view_spot', spot_id=spot.id))
+    user = User.query.get(booking.user_id)
+    return render_template('admin/spot_booking.html', booking=booking, user=user, spot=spot)
+
+@app.route('/admin/summary')
+def admin_summary():
+    # Revenue from each lot
+    revenue_data = db.session.query(
+        Parking_lot.location,
+        func.sum(Booking.cost).label('total_revenue')
+    ).join(Parking_spot, Parking_spot.parking_lot_id == Parking_lot.id).join(Booking, Booking.parking_spot_id == Parking_spot.id).group_by(Parking_lot.id).all()
+
+    # Occupancy per lot (available vs occupied)
+    occupancy_data = db.session.query(
+        Parking_lot.location,
+        func.count(func.nullif(Parking_spot.is_booked, False)).label('occupied'),
+        func.count(func.nullif(Parking_spot.is_booked, True)).label('available')
+    ).join(Parking_spot).group_by(Parking_lot.id).all()
+
+    return render_template('admin/summary.html', revenue_data=revenue_data, occupancy_data=occupancy_data)
+
+@app.route('/admin/profile')
+def admin_profile():
+    if 'admin_id' not in session:
+        flash('Please log in as admin.', 'warning')
+        return redirect(url_for('login'))
+    admin = Admin.query.get(session['admin_id'])
+    return render_template('admin/profile.html', admin=admin)
+
+@app.route('/admin/profile/edit', methods=['GET', 'POST'])
+def edit_admin_profile():
+    if 'admin_id' not in session:
+        flash('Please log in as admin.', 'warning')
+        return redirect(url_for('login'))
+
+    admin = Admin.query.get(session['admin_id'])
+
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if username:
+            admin.username = username
+        if password:
+            admin.password = password
+
+        db.session.commit()
+        flash('Profile updated successfully!', 'success')
+        return redirect(url_for('admin_profile'))
+
+    return render_template('admin/edit_profile.html', admin=admin)
     

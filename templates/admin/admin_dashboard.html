@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Admin Dashboard</h2>
+  <div class="row mt-4">
+    <div class="col-md-3">
+      <a href="{{ url_for('manage_users') }}" class="btn btn-primary btn-block">Users</a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('manage_lots') }}" class="btn btn-success btn-block">Manage Parking Lots</a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('admin_search') }}" class="btn btn-warning btn-block">Search</a>
+    </div>
+    <div class="col-md-3">
+      <a href="{{ url_for('admin_summary') }}" class="btn btn-warning btn-block">Summary</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

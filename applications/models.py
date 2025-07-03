@@ -34,6 +34,7 @@ class Parking_lot(db.Model):
     max_no_spots = db.Column(db.Integer, nullable = False )
     landmark = db.Column(db.String(64), nullable = False )
     
+    
 class Parking_spot(db.Model):
     __tablename__ = "Parking_spot"
     id = db.Column(db.Integer, autoincrement = True, primary_key = True )
@@ -41,12 +42,18 @@ class Parking_spot(db.Model):
     is_booked = db.Column(db.Boolean, default=False)
     additional_info = db.Column(db.String(64), nullable=True)
     
+    parking_lot = db.relationship("Parking_lot", backref=db.backref("parking_spots", lazy=True, cascade ="all, delete"))
+    
 class Booking(db.Model):
     __tablename__ = "Booking"
     id = db.Column(db.Integer, autoincrement = True, primary_key = True )
     user_id = db.Column(db.Integer, db.ForeignKey("User.id"), nullable = False )
     parking_spot_id = db.Column(db.Integer, db.ForeignKey("Parking_spot.id"), nullable = False )
-    parking_lot_id = db.Column(db.Integer, db.ForeignKey("Parking_lot.id"), nullable = False )
+    vehicle_number = db.Column(db.String(20), nullable = False )
     start_time = db.Column(db.DateTime, nullable = False )
     end_time = db.Column(db.DateTime, nullable = False )
     cost = db.Column(db.Integer, nullable = False )
+    
+    user = db.relationship("User", backref=db.backref("bookings", lazy=True, cascade ="all, delete"))
+    parking_spot = db.relationship("Parking_spot", backref=db.backref("bookings", lazy=True, cascade ="all, delete"))
+    

@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Booking Details for Spot {{ spot.id }}</h2>
+
+  <table class="table table-bordered">
+    <tr>
+      <th>Booking ID</th>
+      <td>{{ booking.id }}</td>
+    </tr>
+    <tr>
+      <th>User ID and Username</th>
+      <td>{{ booking.user_id }} - {{ user.full_name }}</td>
+    </tr>
+    <tr>
+      <th>Spot ID</th>
+      <td>{{ booking.parking_spot_id }}</td>
+    </tr>
+    <tr>
+      <th>Parking Lot ID</th>
+      <td>{{ booking.parking_spot.parking_lot_id }}</td>
+    </tr>
+    <tr>
+      <th>Vehicle Number</th>
+      <td>{{ booking.vehicle_number }}</td>
+    <tr>
+      <th>Start Time</th>
+      <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+    </tr>
+    <tr>
+      <th>End Time</th>
+      <td>{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+    </tr>
+    <tr>
+      <th>Cost</th>
+      <td>₹{{ booking.cost }}</td>
+    </tr>
+  </table>
+
+  <a href="{{ url_for('view_spot', spot_id=spot.id) }}" class="btn btn-secondary">Back to Spot</a>
+</div>
+{% endblock %}

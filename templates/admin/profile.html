@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Admin Profile</h2>
+  <p><strong>Username:</strong> {{ admin.username }}</p>
+  <a href="{{ url_for('edit_admin_profile') }}" class="btn btn-primary mt-3">Edit Profile</a>
+</div>
+{% endblock %}

@@ -8,8 +8,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///my_db.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = 'supersecret'
 db.init_app(app)
-# with app.app_context():
-#     db.create_all()
+with app.app_context():
+    db.create_all()
 app.app_context().push()
 
 from applications.routes import *

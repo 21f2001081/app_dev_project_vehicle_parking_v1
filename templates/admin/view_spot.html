@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Parking Spot Details</h2>
+  <p><strong>Spot ID:</strong> {{ spot.id }}</p>
+  <p><strong>Status:</strong>
+    {% if spot.is_booked %}
+      <a href="{{ url_for('spot_booking', spot_id=spot.id) }}" class="btn btn-sm btn-danger">Occupied - View Booking</a>
+    {% else %}
+      <span class="badge bg-success">Available</span>
+    {% endif %}
+  </p>
+  {% if not spot.is_booked %}
+    {% if spot.additional_info != 'Unavailable' %}
+    <form method="POST" action="{{ url_for('mark_spot_unavailable', spot_id=spot.id) }}">
+      <button type="submit" class="btn btn-warning" onclick="return confirm('Mark this spot as unavailable?');">Mark as Unavailable</button>
+    </form>
+    {% else %}
+      <span class="badge bg-secondary">Marked Unavailable</span>
+    {% endif %}
+  {% endif %}
+  <a href="{{ url_for('view_lot', lot_id=spot.parking_lot_id) }}" class="btn btn-secondary mt-3">Back to Lot</a>
+</div>
+{% endblock %}

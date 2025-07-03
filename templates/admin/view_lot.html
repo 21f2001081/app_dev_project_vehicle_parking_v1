@@ -1,0 +1,41 @@
+<!-- view_lot.html -->
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Parking Lot: {{ lot.location }} (ID: {{ lot.id }})</h2>
+  <p><strong>Address:</strong> {{ lot.address }}</p>
+  <p><strong>Landmark:</strong> {{ lot.landmark }}</p>
+  <p><strong>Pincode:</strong> {{ lot.pincode }}</p>
+  <p><strong>Price per Unit Time:</strong> ₹{{ lot.price }}</p>
+  <p><strong>Max Spots:</strong> {{ lot.max_no_spots }}</p>
+
+  {% set occupied = spots | selectattr('is_booked') | list | length %}
+  <p><strong>Occupancy:</strong> {{ occupied }} / {{ lot.max_no_spots }} spots occupied</p>
+
+  <hr>
+  <h4>Parking Spots</h4>
+  <div class="row">
+    {% for spot in spots %}
+      <div class="col-md-2 col-sm-3 col-4 mb-3">
+        <a href="{{ url_for('view_spot', spot_id=spot.id) }}" class="text-decoration-none">
+          <div class="card text-center 
+            {% if spot.is_booked %}bg-danger
+            {% elif spot.additional_info == 'Unavailable' %}bg-warning
+            {% else %}bg-success{% endif %} 
+            text-white">
+            <div class="card-body py-3">
+              <h6 class="card-title">Spot {{ loop.index }}</h6>
+              <p class="mb-0">
+                {% if spot.is_booked %}Occupied
+                {% elif spot.additional_info == 'Unavailable' %}Unavailable
+                {% else %}Available{% endif %}
+              </p>
+            </div>
+          </div>
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+  <a href="{{ url_for('manage_lots') }}" class="btn btn-secondary mt-4">Back to All Lots</a>
+</div>
+{% endblock %}
