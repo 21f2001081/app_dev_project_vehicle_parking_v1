@@ -1,19 +1,22 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container mt-5">
-  <h2>Admin Dashboard</h2>
-  <div class="row mt-4">
-    <div class="col-md-3">
-      <a href="{{ url_for('manage_users') }}" class="btn btn-primary btn-block">Users</a>
+  <h2 class="mb-4">Admin Dashboard</h2>
+  <div class="row g-3 justify-content-center">
+    <div class="col-md-2 col-sm-4 col-6">
+      <a href="{{ url_for('manage_users') }}" class="btn btn-primary w-100">Users</a>
     </div>
-    <div class="col-md-3">
-      <a href="{{ url_for('manage_lots') }}" class="btn btn-success btn-block">Manage Parking Lots</a>
+    <div class="col-md-2 col-sm-4 col-6">
+      <a href="{{ url_for('manage_lots') }}" class="btn btn-success w-100">Parking Lots</a>
     </div>
-    <div class="col-md-3">
-      <a href="{{ url_for('admin_search') }}" class="btn btn-warning btn-block">Search</a>
+    <div class="col-md-2 col-sm-4 col-6">
+      <a href="{{ url_for('view_all_bookings') }}" class="btn btn-info w-100">View All Parking Records</a>
     </div>
-    <div class="col-md-3">
-      <a href="{{ url_for('admin_summary') }}" class="btn btn-warning btn-block">Summary</a>
+    <div class="col-md-2 col-sm-4 col-6">
+      <a href="{{ url_for('admin_search') }}" class="btn btn-warning w-100">Search</a>
+    </div>
+    <div class="col-md-2 col-sm-4 col-6">
+      <a href="{{ url_for('admin_summary') }}" class="btn btn-dark w-100">Summary</a>
     </div>
   </div>
 </div>
