@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4">Your Parking Summary</h2>
+
+  <div class="alert alert-success">
+    <strong>Total Spent:</strong> ₹{{ total_cost }}
+  </div>
+
+  <div class="row mb-5">
+    <div class="col-md-6">
+      <h4>Monthly Cost (₹)</h4>
+      <canvas id="monthChart"></canvas>
+    </div>
+    <div class="col-md-6">
+      <h4>Cost by Parking Lot</h4>
+      <canvas id="lotChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const monthCtx = document.getElementById('monthChart').getContext('2d');
+  new Chart(monthCtx, {
+    type: 'bar',
+    data: {
+      labels: {{ months|tojson }},
+      datasets: [{
+        label: '₹ Spent',
+        data: {{ monthly_costs|tojson }},
+        backgroundColor: 'rgba(54, 162, 235, 0.7)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: '₹ Cost' }
+        },
+        x: {
+          title: { display: true, text: 'Month' }
+        }
+      }
+    }
+  });
+
+  const lotCtx = document.getElementById('lotChart').getContext('2d');
+  new Chart(lotCtx, {
+    type: 'doughnut',
+    data: {
+      labels: {{ lot_names|tojson }},
+      datasets: [{
+        data: {{ lot_costs|tojson }},
+        backgroundColor: [
+          '#f94144', '#f3722c', '#f9844a', '#f9c74f',
+          '#90be6d', '#43aa8b', '#577590'
+        ]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          position: 'bottom'
+        }
+      }
+    }
+  });
+</script>
+{% endblock %}
