@@ -2,7 +2,7 @@ from flask import current_app as app
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from applications.models import *
 from datetime import datetime
-from sqlalchemy import func
+from sqlalchemy import func, extract
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -16,7 +16,7 @@ def login():
         if user and user.check_password(password):
             session['user_id'] = user.id
             flash('Login successful!', 'success')
-            return redirect(url_for('home'))
+            return redirect(url_for('user_dashboard'))
     
         elif admin and admin.password == password:
             session['admin_id'] = admin.id
@@ -263,6 +263,15 @@ def spot_booking(spot_id):
     user = User.query.get(booking.user_id)
     return render_template('admin/spot_booking.html', booking=booking, user=user, spot=spot)
 
+@app.route('/admin/bookings')
+def view_all_bookings():
+    if 'admin_id' not in session:
+        flash('Please login as admin.', 'danger')
+        return redirect(url_for('login'))
+
+    bookings = Booking.query.order_by(Booking.start_time.desc()).all()
+    return render_template('admin/all_bookings.html', bookings=bookings)
+
 @app.route('/admin/summary')
 def admin_summary():
     # Revenue from each lot
@@ -311,3 +320,158 @@ def edit_admin_profile():
 
     return render_template('admin/edit_profile.html', admin=admin)
     
+
+@app.route('/user/dashboard')
+def user_dashboard():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    bookings = Booking.query.filter_by(user_id=user.id).order_by(Booking.start_time.desc()).all()
+    return render_template('user/dashboard.html', user=user, bookings=bookings)
+
+@app.route('/user/search', methods=['POST'])
+def search_parking():
+    search_type = request.form['search_type']
+    query = request.form['query']
+    if search_type == 'location':
+        lots = Parking_lot.query.filter(Parking_lot.location.ilike(f"%{query}%")).all()
+    elif search_type == 'pincode':
+        lots = Parking_lot.query.filter_by(pincode=query).all()
+    else:
+        lots = []
+    return render_template('user/search_results.html', lots=lots)
+
+@app.route('/user/book/<int:lot_id>')
+def reserve_spot(lot_id):
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    lot = Parking_lot.query.get_or_404(lot_id)
+    spot = Parking_spot.query.filter_by(parking_lot_id=lot_id, is_booked=False).filter(
+        (Parking_spot.additional_info != 'Unavailable') | (Parking_spot.additional_info.is_(None))
+    ).first()
+    if not spot:
+        flash('No available spots.', 'danger')
+        return redirect(url_for('user_dashboard'))
+    return render_template('user/reserve_form.html', lot=lot, spot=spot, user_id=session['user_id'])
+
+@app.route('/user/book/confirm', methods=['POST'])
+def confirm_reservation():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    user_id = session['user_id']
+    lot_id = int(request.form['lot_id'])
+    spot_id = int(request.form['spot_id'])
+    vehicle_number = request.form['vehicle_number']
+    now = datetime.now()
+    booking = Booking(
+        user_id=user_id,
+        parking_spot_id=spot_id,
+        start_time=now,
+        end_time=now,
+        cost=0,
+        vehicle_number=vehicle_number
+    )
+    spot = Parking_spot.query.get_or_404(spot_id)
+    spot.is_booked = True
+    db.session.add(booking)
+    db.session.commit()
+    flash('Reservation successful.', 'success')
+    return redirect(url_for('user_dashboard'))
+
+@app.route('/user/release/<int:booking_id>')
+def release_form(booking_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    booking = Booking.query.get_or_404(booking_id)
+    now = datetime.now()
+    return render_template('user/release_form.html', booking=booking, now=now)
+
+@app.route('/user/release/confirm', methods=['POST'])
+def confirm_release():
+    booking_id = int(request.form['booking_id'])
+    booking = Booking.query.get_or_404(booking_id)
+    now = datetime.now()
+    booking.end_time = now
+    # Calculate duration and cost
+    duration = (booking.end_time - booking.start_time).total_seconds() / 60  # in minutes
+    rate = booking.parking_spot.parking_lot.price
+    booking.cost = int(rate * (duration / 60))  # hourly rate
+    booking.parking_spot.is_booked = False
+    db.session.commit()
+    flash('Spot released.', 'success')
+    return redirect(url_for('user_dashboard'))
+
+@app.route('/user/profile')
+def user_profile():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    user = User.query.get_or_404(session['user_id'])
+    return render_template('user/profile.html', user=user)
+
+@app.route('/user/profile/edit', methods=['GET', 'POST'])
+def edit_user_profile():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'warning')
+        return redirect(url_for('login'))
+    
+    user = User.query.get_or_404(session['user_id'])
+
+    if request.method == 'POST':
+        user.full_name = request.form['full_name']
+        user.address = request.form['address']
+        user.pincode = request.form['pincode']
+        db.session.commit()
+        flash("Profile updated successfully.", "success")
+        return redirect(url_for('user_profile'))
+
+    return render_template('user/edit_profile.html', user=user)
+
+@app.route('/user/summary')
+def user_summary():
+    if 'user_id' not in session:
+        flash('Please log in to view summary.', 'warning')
+        return redirect(url_for('login'))
+
+    user_id = session['user_id']
+
+    # Total cost
+    total_cost = db.session.query(func.sum(Booking.cost))\
+        .filter_by(user_id=user_id).scalar() or 0
+
+    # Cost per month
+    monthly_data = db.session.query(
+        extract('month', Booking.start_time).label('month'),
+        func.sum(Booking.cost).label('total')
+    ).filter_by(user_id=user_id)\
+     .group_by('month')\
+     .order_by('month')\
+     .all()
+
+    months = [datetime(2024, int(row.month), 1).strftime('%B') for row in monthly_data]
+    monthly_costs = [row.total for row in monthly_data]
+
+    # Cost per parking lot
+    lot_data = (
+    db.session.query(
+        Parking_lot.location,
+        func.sum(Booking.cost)
+    )
+    .join(Parking_spot, Booking.parking_spot_id == Parking_spot.id)
+    .join(Parking_lot, Parking_spot.parking_lot_id == Parking_lot.id)
+    .filter(Booking.user_id == user_id)
+    .group_by(Parking_lot.location)
+    .all())
+
+    lot_names = [row[0] for row in lot_data]
+    lot_costs = [row[1] for row in lot_data]
+
+    return render_template(
+        'user/summary.html',
+        total_cost=total_cost,
+        months=months,
+        monthly_costs=monthly_costs,
+        lot_names=lot_names,
+        lot_costs=lot_costs
+    )

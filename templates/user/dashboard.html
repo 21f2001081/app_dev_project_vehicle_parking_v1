@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h2>Welcome, {{ user.full_name }}</h2>
+  <hr>
+
+  <h4>Search Parking Lots</h4>
+  <form method="POST" action="{{ url_for('search_parking') }}">
+    <div class="row">
+      <div class="col-md-3">
+        <select name="search_type" class="form-control">
+          <option value="location">By Location</option>
+          <option value="pincode">By Pincode</option>
+        </select>
+      </div>
+      <div class="col-md-6">
+        <input type="text" name="query" class="form-control" placeholder="Enter search text..." required>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-success">Search</button>
+      </div>
+    </div>
+  </form>
+
+
+  <hr>
+  <h4>Recent Parking History</h4>
+  <table class="table">
+    <thead>
+      <tr>
+        <th>ID</th><th>Location</th><th>Vehicle</th>
+        <th>Start</th><th>End</th><th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td>{{ b.parking_spot.parking_lot.location }}</td>
+        <td>{{ b.vehicle_number }}</td>
+        <td>{{ b.start_time }}</td>
+        <td>{{ b.end_time if b.start_time != b.end_time else "Active" }}</td>
+        <td>
+          {% if b.start_time == b.end_time %}
+            <a href="{{ url_for('release_form', booking_id=b.id) }}" class="btn btn-warning btn-sm">Release</a>
+          {% else %}
+            <span class="text-muted">Released</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="text-end mt-3">
+    <a href="{{ url_for('user_summary') }}" class="btn btn-info">View Summary</a>
+  </div>
+  
+</div>
+{% endblock %}

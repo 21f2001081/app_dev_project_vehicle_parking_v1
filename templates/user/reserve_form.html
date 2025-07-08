@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h3>Reserve Spot</h3>
+  <form method="POST" action="{{ url_for('confirm_reservation') }}">
+    <input type="hidden" name="lot_id" value="{{ lot.id }}">
+    <input type="hidden" name="spot_id" value="{{ spot.id }}">
+    <input type="hidden" name="user_id" value="{{ user_id }}">
+
+    <div class="mb-3">
+      <label>Lot Location</label>
+      <input type="text" class="form-control" value="{{ lot.location }}" disabled>
+    </div>
+
+    <div class="mb-3">
+      <label>Spot ID (auto-assigned)</label>
+      <input type="text" class="form-control" value="{{ spot.id }}" disabled>
+    </div>
+
+    <div class="mb-3">
+      <label>Vehicle Number</label>
+      <input type="text" name="vehicle_number" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-success">Reserve</button>
+    <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

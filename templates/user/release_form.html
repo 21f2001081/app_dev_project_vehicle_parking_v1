@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h3>Release Spot</h3>
+  <form method="POST" action="{{ url_for('confirm_release') }}">
+    <input type="hidden" name="booking_id" value="{{ booking.id }}">
+    
+    <div class="mb-3">
+      <label>Spot ID</label>
+      <input type="text" class="form-control" value="{{ booking.parking_spot.id }}" disabled>
+    </div>
+    <div class="mb-3">
+      <label>Vehicle Number</label>
+      <input type="text" class="form-control" value="{{ booking.vehicle_number }}" disabled>
+    </div>
+    <div class="mb-3">
+      <label>Start Time</label>
+      <input type="text" class="form-control" value="{{ booking.start_time }}" disabled>
+    </div>
+    <div class="mb-3">
+      <label>Release Time</label>
+      <input type="text" class="form-control" value="{{ now }}" disabled>
+    </div>
+    <div class="mb-3">
+      <label>Estimated Cost</label>
+      <input type="text" class="form-control" value="₹{{ booking.parking_spot.parking_lot.price }} per hour" disabled>
+    </div>
+
+    <button type="submit" class="btn btn-danger">Release</button>
+    <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary">Cancel</a>
+  </form>
+</div>
+{% endblock %}

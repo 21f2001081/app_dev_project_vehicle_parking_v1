@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container mt-5">
+  <h4>Search Results</h4>
+  {% if lots %}
+    <table class="table">
+      <thead><tr><th>Location</th><th>Address</th><th>Availability</th><th>Action</th></tr></thead>
+      <tbody>
+      {% for lot in lots %}
+        <tr>
+          <td>{{ lot.location }}</td>
+          <td>{{ lot.address }}</td>
+          <td>
+            {% set available = lot.parking_spots | selectattr('is_booked', 'equalto', False)
+                                                 | selectattr('additional_info', 'ne', 'Unavailable') | list | length %}
+            {{ available }} spots available
+          </td>
+          <td>
+            {% if available > 0 %}
+              <a href="{{ url_for('reserve_spot', lot_id=lot.id) }}" class="btn btn-success btn-sm">Reserve</a>
+            {% else %}
+              <span class="text-muted">No Spots</span>
+            {% endif %}
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No parking lots found matching your query.</p>
+  {% endif %}
+</div>
+{% endblock %}
