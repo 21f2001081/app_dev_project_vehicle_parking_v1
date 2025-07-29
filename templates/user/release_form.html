@@ -15,11 +15,11 @@
     </div>
     <div class="mb-3">
       <label>Start Time</label>
-      <input type="text" class="form-control" value="{{ booking.start_time }}" disabled>
+      <input type="text" class="form-control" value="{{ booking.start_time.strftime('%d %b %Y, %H:%M:%S') }}" disabled>
     </div>
     <div class="mb-3">
       <label>Release Time</label>
-      <input type="text" class="form-control" value="{{ now }}" disabled>
+      <input type="text" class="form-control" value="{{ now.strftime('%d %b %Y, %H:%M:%S') }}" disabled>
     </div>
     <div class="mb-3">
       <label>Estimated Cost</label>

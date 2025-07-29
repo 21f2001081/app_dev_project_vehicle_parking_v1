@@ -2,7 +2,7 @@ from flask import current_app as app
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from applications.models import *
 from datetime import datetime
-from sqlalchemy import func, extract
+from sqlalchemy import func, extract, case
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -232,7 +232,7 @@ def view_spot(spot_id):
 #         flash("Spot deleted successfully.", "success")
 #     return redirect(url_for('view_lot', lot_id=spot.parking_lot_id))
 
-@app.route('/admin/spot/unavailable/<int:spot_id>', methods=['POST'])
+@app.route('/admin/spot/<int:spot_id>/unavailable', methods=['POST'])
 def mark_spot_unavailable(spot_id):
     if 'admin_id' not in session:
         flash('You need to log in as an admin first.', 'error')
@@ -248,6 +248,21 @@ def mark_spot_unavailable(spot_id):
     
     return redirect(url_for('view_spot', spot_id=spot.id))
 
+@app.route('/spot/<int:spot_id>/available', methods=['POST'])
+def mark_spot_available(spot_id):  
+    if 'admin_id' not in session:
+        flash('You need to log in as an admin first.', 'error')
+        return redirect(url_for('login'))
+    
+    spot = Parking_spot.query.get_or_404(spot_id)
+    if spot.additional_info == 'Unavailable':
+        spot.additional_info = None
+        db.session.commit()
+        flash("Spot marked as available.", "success")
+    else:
+        flash("Spot is already available.", "info")
+        
+    return redirect(url_for('view_spot', spot_id=spot.id))
 
 # Route to view booking for a given spot
 @app.route('/admin/spot/<int:spot_id>/booking')
@@ -282,10 +297,15 @@ def admin_summary():
 
     # Occupancy per lot (available vs occupied)
     occupancy_data = db.session.query(
-        Parking_lot.location,
-        func.count(func.nullif(Parking_spot.is_booked, False)).label('occupied'),
-        func.count(func.nullif(Parking_spot.is_booked, True)).label('available')
-    ).join(Parking_spot).group_by(Parking_lot.id).all()
+    Parking_lot.location,
+    func.count(case((Parking_spot.is_booked == True, 1))).label('occupied'),
+    func.count(case(
+        ((Parking_spot.is_booked == False) & (Parking_spot.additional_info == 'Unavailable'), 1)
+    )).label('unavailable'),
+    func.count(case(
+        ((Parking_spot.is_booked == False) & (Parking_spot.additional_info.is_(None)), 1)
+    )).label('available')
+).join(Parking_spot).group_by(Parking_lot.id).all()
 
     return render_template('admin/summary.html', revenue_data=revenue_data, occupancy_data=occupancy_data)
 

@@ -33,18 +33,23 @@
     type: 'bar',
     data: {
       labels: {{ occupancy_data|map(attribute=0)|list|tojson }},
-      datasets: [
-        {
-          label: 'Occupied',
-          data: {{ occupancy_data|map(attribute=1)|list|tojson }},
-          backgroundColor: 'rgba(255, 99, 132, 0.7)'
-        },
-        {
-          label: 'Available',
-          data: {{ occupancy_data|map(attribute=2)|list|tojson }},
-          backgroundColor: 'rgba(75, 192, 192, 0.7)'
-        }
-      ]
+datasets: [
+  {
+    label: 'Occupied',
+    data: {{ occupancy_data|map(attribute=1)|list|tojson }},
+    backgroundColor: 'rgba(255, 99, 132, 0.7)'
+  },
+  {
+    label: 'Unavailable',
+    data: {{ occupancy_data|map(attribute=2)|list|tojson }},
+    backgroundColor: 'rgba(255, 206, 86, 0.7)'  // Yellowish
+  },
+  {
+    label: 'Available',
+    data: {{ occupancy_data|map(attribute=3)|list|tojson }},
+    backgroundColor: 'rgba(75, 192, 192, 0.7)'  // Greenish
+  }
+]
     },
     options: {
       responsive: true,

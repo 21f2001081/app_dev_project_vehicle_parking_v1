@@ -29,7 +29,7 @@
     <thead>
       <tr>
         <th>ID</th><th>Location</th><th>Vehicle</th>
-        <th>Start</th><th>End</th><th>Action</th>
+        <th>Start</th><th>End</th><th>Duration</th><th>Cost</th><th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -38,8 +38,35 @@
         <td>{{ loop.index }}</td>
         <td>{{ b.parking_spot.parking_lot.location }}</td>
         <td>{{ b.vehicle_number }}</td>
-        <td>{{ b.start_time }}</td>
-        <td>{{ b.end_time if b.start_time != b.end_time else "Active" }}</td>
+        <td>{{ b.start_time.strftime('%d %b %Y, %H:%M:%S') }}</td>
+        <td>{{ b.end_time.strftime('%d %b %Y, %H:%M:%S') if b.start_time != b.end_time else "Active" }}</td>
+        <td>
+          {% if b.start_time != b.end_time %}
+            {% set duration = b.end_time - b.start_time %}
+            {% set days = duration.days %}
+            {% set total_seconds = duration.total_seconds()|int %}
+            {% set hours = (total_seconds % 86400) // 3600 %}
+            {% set minutes = (total_seconds % 3600) // 60 %}
+            {% set seconds = total_seconds % 60 %}
+
+            {% if days > 0 %}{{ days }}d {% endif %}
+            {% if hours > 0 %}{{ hours }}h {% endif %}
+            {% if minutes > 0 %}{{ minutes }}m {% endif %}
+
+            {% if not days and not hours and not minutes and seconds > 0 %}
+              {{ seconds }}s
+            {% endif %}
+          {% else %}
+            -
+          {% endif %}
+        </td>
+    <td>
+      {% if b.start_time != b.end_time %}
+        ₹{{ b.cost }}
+      {% else %}
+        -
+      {% endif %}
+    </td>
         <td>
           {% if b.start_time == b.end_time %}
             <a href="{{ url_for('release_form', booking_id=b.id) }}" class="btn btn-warning btn-sm">Release</a>

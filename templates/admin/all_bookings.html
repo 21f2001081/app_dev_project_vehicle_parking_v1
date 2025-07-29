@@ -14,6 +14,7 @@
           <th>Vehicle No</th>
           <th>Start</th>
           <th>End</th>
+          <th>Duration</th>
           <th>Cost (₹)</th>
         </tr>
       </thead>
@@ -27,6 +28,26 @@
           <td>{{ b.vehicle_number }}</td>
           <td>{{ b.start_time.strftime('%d-%m-%Y %H:%M') }}</td>
           <td>{{ b.end_time.strftime('%d-%m-%Y %H:%M') if b.start_time != b.end_time else 'Active' }}</td>
+          <td>
+            {% if b.start_time != b.end_time %}
+              {% set duration = b.end_time - b.start_time %}
+              {% set days = duration.days %}
+              {% set total_seconds = duration.total_seconds()|int %}
+              {% set hours = (total_seconds % 86400) // 3600 %}
+              {% set minutes = (total_seconds % 3600) // 60 %}
+              {% set seconds = total_seconds % 60 %}
+
+              {% if days > 0 %}{{ days }}d {% endif %}
+              {% if hours > 0 %}{{ hours }}h {% endif %}
+              {% if minutes > 0 %}{{ minutes }}m {% endif %}
+
+              {% if not days and not hours and not minutes and seconds > 0 %}
+                {{ seconds }}s
+              {% endif %}
+            {% else %}
+              -
+            {% endif %}
+          </td>
           <td>{{ b.cost }}</td>
         </tr>
         {% endfor %}
