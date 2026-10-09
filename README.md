@@ -1,3 +1,10 @@
-# vehicle-parking-v1
+## Modern Application Development Project - Vehicle Parking App V1
 
-It is a multi-user app (one requires an administrator and other users) that manages different parking lots, parking spots and parked vehicles. Assume that this parking app is for 4-wheeler parking.
+A multi-user web application for managing 4-wheeler parking lots, parking spots, and reservations.
+
+#Overview
+
+The app has two roles:
+
+Admin (superuser): created automatically when the database is first initialised; no registration needed. Manages parking lots and monitors usage.
+User: registers and logs in, books a spot in a lot, and releases it when leaving.
